@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message Heartbeat {
+  string device_id = 1;
+  uint64 timestamp = 2;
+  float battery_level = 3;
+  float cpu_usage = 4;
+  string firmware_version = 5;
+  message Location {
+    double latitude = 1;
+    double longitude = 2;
+  }
+  Location location = 6;
+}
