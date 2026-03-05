@@ -4,6 +4,7 @@ import { config } from '../../../core/config.js';
 import pkg from '../contracts/heartbeat.cjs';
 import type { IHeartbeat } from '../contracts/heartbeat.js';
 import type { MessageProcessor } from '../../../infrastructure/kafka/interfaces/processor.js';
+import { metrics } from "../../../infrastructure/metrics/metrics-service.js";
 
 // Define the shape of our ClickHouse row
 interface HeartbeatRow {
@@ -53,6 +54,9 @@ export class HeartbeatProcessorService implements MessageProcessor {
         processed_at: new Date().toISOString().replace('T', ' ').slice(0, 23),
       });
 
+      metrics.heartbeatsProcessed.inc({ status: "received" });
+			metrics.batchSize.set(this.batch.length);
+
       // 3. Backpressure check
       if (this.batch.length >= config.BATCH_SIZE * 2) {
         console.warn('Batch size too large, pausing consumer...');
@@ -81,6 +85,9 @@ export class HeartbeatProcessorService implements MessageProcessor {
     this.isProcessing = true;
     const currentBatch = [...this.batch];
     this.batch = [];
+    metrics.batchSize.set(0);
+
+		const endTimer = metrics.batchFlushDuration.startTimer();
 
     try {
       console.log(`Flushing ${currentBatch.length} heartbeats to ClickHouse...`);
@@ -97,10 +104,16 @@ export class HeartbeatProcessorService implements MessageProcessor {
       if (this.flow) {
         this.flow.resume();
       }
+      metrics.heartbeatsProcessed.inc(
+				{ status: "success" },
+				currentBatch.length,
+			);
     } catch (err) {
+      metrics.heartbeatsProcessed.inc({ status: "error" }, currentBatch.length);
       console.error('Failed to flush batch to ClickHouse:', err);
       // TODO: retry or send to a DLQ
     } finally {
+      endTimer();
       this.isProcessing = false;
       
       // If messages came in while processing, set timer again

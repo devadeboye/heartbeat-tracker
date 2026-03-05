@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from app.router import api_router
 from app.core.config import settings
 from app.infrastructure.kafka.producer import producer_service
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Logging Setup (Simplified for DDD example)
 logging.basicConfig(
@@ -39,6 +40,9 @@ def create_app() -> FastAPI:
 
     # Core Router Registration
     app.include_router(api_router)
+
+    # Expose Prometheus metrics on /metrics
+    Instrumentator().instrument(app).expose(app)
 
     return app
 

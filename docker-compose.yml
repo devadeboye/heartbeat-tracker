@@ -26,6 +26,29 @@ services:
     depends_on:
       - redpanda
 
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - redpanda
+      - heartbeat-worker
+      - clickhouse
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
   # Node.js Consumer Worker
   heartbeat-worker:
     build:
@@ -34,13 +57,15 @@ services:
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
       - KAFKA_TOPIC=heartbeats
-      - CLICKHOUSE_HOST=http://clickhouse:8123
+      - CLICKHOUSE_URL=http://clickhouse:8123
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password123
       - BATCH_SIZE=1000
     depends_on:
       - redpanda
       - clickhouse
+    ports:
+      - "9091:9091" # Metrics port
 
   # Time-Series Storage
   clickhouse:
@@ -51,6 +76,8 @@ services:
     environment:
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=password123
+    volumes:
+      - ./clickhouse/prometheus.xml:/etc/clickhouse-server/config.d/prometheus.xml
     ulimits:
       nofile:
         soft: 262144

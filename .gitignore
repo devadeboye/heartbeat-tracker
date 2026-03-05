@@ -30,3 +30,13 @@ apps/ingestion-api/app/domains/heartbeat/contracts/*_pb2.py
 # Docker
 .docker/
 
+# Observability Data & Persistence
+**/data/
+prometheus/data/
+grafana/data/
+
+# Troubleshooting & Backups
+*.bak
+*.tmp
+config.json*
+
