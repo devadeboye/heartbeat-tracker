@@ -40,3 +40,19 @@ grafana/data/
 *.tmp
 config.json*
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+_override.tf
+_override.tf.json
+.terraform.lock.hcl
+
+# SSH Keys
+*.pem
+
