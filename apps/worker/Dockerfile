@@ -13,10 +13,21 @@ RUN apt-get update && apt-get install -y \
     libc6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package*.json ./
+COPY apps/worker/package*.json ./
 RUN npm install --legacy-peer-deps
 
-COPY . .
+# Copy shared proto
+COPY libs/contracts /libs/contracts
+
+# Copy application source
+COPY apps/worker .
+
+# Generate Protobuf contracts
+RUN mkdir -p src/domains/heartbeat/contracts && \
+    npx pbjs -t static-module -w es6 -o src/domains/heartbeat/contracts/heartbeat.js /libs/contracts/heartbeat.proto && \
+    npx pbts -o src/domains/heartbeat/contracts/heartbeat.d.ts src/domains/heartbeat/contracts/heartbeat.js && \
+    mv src/domains/heartbeat/contracts/heartbeat.js src/domains/heartbeat/contracts/heartbeat.cjs
+
 RUN npx tsc
 
 # Stage 2: Runtime
@@ -37,6 +48,6 @@ COPY --from=builder /build/package.json ./package.json
 # Default environment
 ENV NODE_ENV=production
 ENV KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-ENV CLICKHOUSE_HOST=http://clickhouse:8123
+ENV CLICKHOUSE_URL=http://clickhouse:8123
 
 CMD ["node", "dist/main.js"]

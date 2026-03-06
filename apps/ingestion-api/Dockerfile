@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblz4-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY apps/ingestion-api/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --user --no-cache-dir -r requirements.txt
 
@@ -26,18 +26,26 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -m -d /home/appuser -g appuser appuser || true
+
 # Copy installed dependencies from the builder stage
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Copy application source code
-COPY --chown=appuser:appuser ./app /app/app
+COPY --chown=appuser:appuser apps/ingestion-api/app /app/app
+
+# Copy shared proto
+COPY --chown=appuser:appuser libs/contracts /libs/contracts
 
 # Ensure correct permissions
-RUN chmod -R 755 /app
+RUN chown -R appuser:appuser /app && chmod -R 755 /app
 
-# Create a non-root user and switch to it
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Switch to the non-root user
 USER appuser
+
+# Generate Python Protobuf files using the system python (which has access to ~/.local packages)
+RUN python -m grpc_tools.protoc -I/libs/contracts --python_out=/app/app/domains/heartbeat/contracts/ /libs/contracts/heartbeat.proto
 
 EXPOSE 8000
 

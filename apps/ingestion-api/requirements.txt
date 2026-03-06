@@ -7,3 +7,4 @@ pydantic-settings>=2.2.0
 python-json-logger>=2.0.7
 prometheus-fastapi-instrumentator>=7.0.0
 lz4>=4.3.3
+grpcio-tools>=1.62.0
