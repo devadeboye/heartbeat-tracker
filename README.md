@@ -79,7 +79,7 @@ The system successfully absorbed the traffic without dropping a single message, 
 - **Requests per second**: ~330 [#/sec] (Mean)
 - **Time per request**: ~302ms (across all concurrent requests)
 
-### Results (Multi-Worker - 4 Workers)
+### Results (Multi-Worker - Localized via Docker Desktop)
 
 A secondary test was run using 4 Uvicorn workers to test horizontal scaling.
 
@@ -89,4 +89,26 @@ A secondary test was run using 4 Uvicorn workers to test horizontal scaling.
 
 *Note on Local Performance:* Running multiple Uvicorn worker processes inside Docker Desktop on macOS often results in *lower* throughput than a single async worker due to the virtualization overhead and context-switching across the hypervisor bridge. In a native Linux production environment, the multi-worker setup would yield a proportional increase in requests per second.
 
-The Node.js worker efficiently batched all messages from both tests and flushed them to ClickHouse, keeping the system stable under load.
+### Results (Cloud Scale - AWS EC2 t3.large)
+
+To demonstrate true throughput, the stack was provisioned on a native Linux AWS EC2 instance (`t3.large`) using Terraform, unleashing the multi-worker Ingestion API without hypervisor bottlenecks.
+
+- **Complete requests**: 100,000
+- **Failed requests**: 0
+- **Requests per second**: ~823 [#/sec] (Mean)
+- **Time per request**: ~1.2ms (across all concurrent requests)
+
+The Node.js worker efficiently batched all messages from these tests and flushed them to ClickHouse, keeping the system completely stable under heavy load.
+
+---
+
+### Load Test Evidence
+
+The following captures provide proof of the system's performance and stability during the live AWS cloud benchmark:
+
+*Note: These screenshots capture the Redpanda console, the active AWS EC2 instance, and the Apache Bench terminal output.*
+
+- ![Benchmark Evidence 1](docs/benchmarks/Screenshot%202026-03-06%20at%2009.47.43.png)
+- ![Benchmark Evidence 2](docs/benchmarks/Screenshot%202026-03-06%20at%2009.47.57.png)
+- ![Benchmark Evidence 3](docs/benchmarks/Screenshot%202026-03-06%20at%2009.48.31.png)
+- ![Benchmark Evidence 4](docs/benchmarks/Screenshot%202026-03-06%20at%2009.52.37.png)

@@ -9,7 +9,7 @@ sudo chmod 666 /var/run/docker.sock
 
 # Install Docker Compose
 sudo apt-get update
-sudo apt-get install -y docker-compose-plugin
+sudo apt-get install -y docker-compose-plugin apache2-utils
 
 # Setup project environment
 echo "Infrastructure is ready for load testing."
